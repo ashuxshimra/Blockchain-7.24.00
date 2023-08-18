@@ -1,10 +1,11 @@
 const ethers=require("ethers"); //require is a function to get ethers from p.json
 const fs=require("fs");
+require("dotenv").config();//importimg .env to use here
 async function main() {
 //now for deployment , lets get the wallet which will fund the deploymengt here- ganache acc private key and provider willbe ganache http
-const provider=new ethers.providers.JsonRpcProvider("http://127.0.0.1:7545"); //netweork where contract to be deployed
+const provider=new ethers.providers.JsonRpcProvider(process.env.RPC_URL); //netweork where contract to be deployed
 const wallet= new ethers.Wallet(
-  "0xc1d5510fae8b7f86560ff188e07120776888da9b5d0c3378d65b8699ade49135", provider
+  process.env.PRIVATE_KEY, provider
 ); //the wallet you will use to fund the depoymentt , here using oroivate key of ghanache fake account and will be deployed in provider n.w
 // when a contract is deployed to a bc n.w , we need its abi so that we know its functiionalities and binary code which is sc low level code deployed
 const abi=fs.readFileSync("./SimpleStorage_sol_SimpleStorage.abi","utf8");//getting abi and bin using fs which was obtained after compilation of contract using solc
@@ -12,14 +13,25 @@ const binary=fs.readFileSync("./SimpleStorage_sol_SimpleStorage.bin","utf8");//h
 const contractFactory=new ethers.ContractFactory(abi, binary, wallet); //creating a object which will be used for deployment , and has abi , binary, and from which wallet that is which contract to be deployed using whuchg acc on which network
 console.log("Deploying, please wait...");
 const contract=await contractFactory.deploy(); //deploying the contract and stop , await let tehg contract deploy first
-const transactionReceipt=await contract.deployTransaction.wait(1); //now that contract is deployed , we are making one block confirmation
+await contract.deployTransaction.wait(1); 
+console.log(`contract address is ${contract.address}`) //once run node deploy.js , this will give the address and using this address on sepolia real testnet you can track
+
+// const transactionReceipt=await contract.deployTransaction.wait(1); //now that contract is deployed , we are making one block confirmation
 // transactionreceipt is what u get when you have block confirmation , contract is deployed and making sure that we are waiting for oine block confiormation , then this receipt is basically contract was deployed and confirmed adn transaction acc to that 
 console.log(contract); //getting the deployed contract , and yes etherjs librabry has multiple more tools
+// we can interact with sc which is deployed in fake ganacge bc bn.w as of now using ether.js , interacting=>just as we had function buttons under deployed contracts in remix , that is interafcting hence thats why we had abi mentioned for contractfactory object
+const currentFavoriteNumber=await contract.retrieve(); //using contract which is deployed we want to access retrieve function
+console.log(currentFavoriteNumber.toString());
+const transactionResponse=await contract.store("7");
+const transactionReceipt=await transactionResponse.wait(1); //giving a block confirmation for store
+const updatedFavoriteNumber=await contract.retrieve();
+console.log(`updated favorite number is: ${updatedFavoriteNumber}`);
+
 // deploy transaction is different and when no wait then you get this deployment transaction 
-console.log("here is the deployment transaction ()transaction response");
-console.log(contract.deployTransaction);//the trabsaction receipt you get aftyer simply deploying and not waiting
-console.log("here is the transacxtion receipt by havibg block confirmation");
-console.log(transactionReceipt); 
+// console.log("here is the deployment transaction ()transaction response");
+// console.log(contract.deployTransaction);//the trabsaction receipt you get aftyer simply deploying and not waiting
+// console.log("here is the transacxtion receipt by havibg block confirmation");
+// console.log(transactionReceipt); 
 // creating and deploying a contract on bc n.w is like sending a tx too
 // above u have deployed contract using etherjs but below u can also deploy by using tx data itself
 // const nonce = await wallet.getTransactionCount() //this will give blockno
